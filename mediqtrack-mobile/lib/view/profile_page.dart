@@ -37,7 +37,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final res = await http.get(
-        Uri.parse('http://172.20.10.4:8000/api/patient/profile/$uid'),
+        Uri.parse('http://10.82.145.75:8000/api/patient/profile/$uid'),
         headers: {'Accept': 'application/json'},
       );
       if (res.statusCode == 200) {
@@ -296,7 +296,7 @@ Future<void> _removeAccountFlow(BuildContext context) async {
   try {
     // 1️⃣ Delete from MySQL via Laravel API
     final res = await http.delete(
-      Uri.parse('http://172.20.10.4:8000/api/patient/delete/$uid'),
+      Uri.parse('http://10.82.145.75:8000/api/patient/delete/$uid'),
       headers: {'Accept': 'application/json'},
     );
 

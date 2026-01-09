@@ -37,7 +37,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://172.20.10.4:8000/api/patient/profile/$uid'),
+        Uri.parse('http://10.82.145.75:8000/api/patient/profile/$uid'),
         headers: {'Accept': 'application/json'},
       );
 
@@ -78,7 +78,7 @@ Future<void> _joinQueue() async {
 
   try {
     final res = await http.post(
-      Uri.parse('http://172.20.10.4:8000/api/join-queue'),
+      Uri.parse('http://10.82.145.75:8000/api/join-queue'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       body: jsonEncode({'firebase_uid': uid}),
     );
@@ -134,7 +134,7 @@ Future<void> _joinQueue() async {
   Future<Map<String, String?>> _fetchRoomDoctor(String uid) async {
     try {
       final res = await http.get(
-        Uri.parse('http://172.20.10.4:8000/api/my-queue/$uid'),
+        Uri.parse('http://10.82.145.75:8000/api/my-queue/$uid'),
         headers: {'Accept': 'application/json'},
       );
       if (res.statusCode == 200) {
@@ -977,7 +977,7 @@ void dispose() {
 
       // 🔹 2. Call Laravel API to set status = cancelled
       final response = await http.post(
-        Uri.parse('http://172.20.10.4:8000/api/queue/cancel'),
+        Uri.parse('http://10.82.145.75:8000/api/queue/cancel'),
         headers: {'Accept': 'application/json'},
         body: {'uid': uid},
       );

@@ -99,7 +99,7 @@ Future<void> _syncFcmTokenToServer(String token) async {
 
   try {
     final res = await http.post(
-      Uri.parse('http://172.20.10.4:8000/api/update-fcm-token'),
+      Uri.parse('http://10.82.145.75:8000/api/update-fcm-token'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       body: jsonEncode({'firebase_uid': uid, 'fcm_token': token}),
     );

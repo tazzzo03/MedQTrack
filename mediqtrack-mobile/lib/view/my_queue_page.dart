@@ -45,7 +45,7 @@ class _MyQueuePageState extends State<MyQueuePage> {
   }
 
 
-  static const _apiBase = 'http://172.20.10.4:8000';
+  static const _apiBase = 'http://10.82.145.75:8000';
 
   @override
   void initState() {

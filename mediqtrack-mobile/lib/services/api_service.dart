@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mediqtrack03/models/notification_model.dart';
 
 class ApiService {
-  static const String baseUrl = "http://172.20.10.4:8000/api"; // ubah ikut IP kalau test di phone
+  static const String baseUrl = "http://10.82.145.75:8000/api"; // ubah ikut IP kalau test di phone
 
   // ✅ function untuk verify token (testing)
   static Future<void> verifyToken() async {

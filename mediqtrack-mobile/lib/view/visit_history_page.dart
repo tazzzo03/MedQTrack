@@ -13,8 +13,8 @@ class VisitHistoryPage extends StatefulWidget {
 class _VisitHistoryPageState extends State<VisitHistoryPage> {
   VisitFilter _filter = VisitFilter.all;
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
-  // Tukar ikut IP PC kau, contoh 172.20.10.4
-  static const _apiBase = 'http://172.20.10.4:8000';
+  // Tukar ikut IP PC kau, contoh 10.82.145.75
+  static const _apiBase = 'http://10.82.145.75:8000';
 
   late Future<List<VisitItem>> _future;
 
