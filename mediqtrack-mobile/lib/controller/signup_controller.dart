@@ -50,7 +50,7 @@ class SignUpController {
       await _db.collection('users').doc(user.uid).set(firestoreData);
 
       // 4�,?��� Hantar data ke Laravel API (untuk simpan ke MySQL)
-      const apiUrl = "http://10.82.145.75:8000/api/register-patient";
+      const apiUrl = "http://10.82.150.157:8000/api/register-patient";
 
       final response = await http.post(
         Uri.parse(apiUrl),

@@ -45,7 +45,7 @@ class _MyQueuePageState extends State<MyQueuePage> {
   }
 
 
-  static const _apiBase = 'http://10.82.145.75:8000';
+  static const _apiBase = 'http://10.82.150.157:8000';
 
   @override
   void initState() {
@@ -54,7 +54,27 @@ class _MyQueuePageState extends State<MyQueuePage> {
     _initGeofence();
     OutsideStatus.instance.hide(_outsideGraceSeconds);
     _geo.onEnterRegion = _handleGeofenceEnter;
-    _geo.onExitRegion = _handleGeofenceExit;
+    //
+    _geo.onShowRuleMessage = (message) {
+      debugPrint('🔔 UI RECEIVED RULE MESSAGE = $message');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    };
+
+    _geo.onRuleMessage = (message) {
+      _showInAppAlert(message);
+    };
+    
+
+    _geo.onStartOutsideCountdown = (seconds) {
+      debugPrint('🎬 UI RECEIVED COUNTDOWN = $seconds seconds');
+      startOutsideCountdownFromRule(seconds);
+    };
 
     // Listen to Now Serving
     const clinicDocId = 'CL01';
@@ -127,6 +147,28 @@ class _MyQueuePageState extends State<MyQueuePage> {
 
   bool _isClinicOpenNow() {
     return true;
+  }
+
+  bool _isActiveQueueStatus(String? status) {
+    final s = status?.toLowerCase();
+    return s == 'waiting' ||
+        s == 'in_consultation' ||
+        s == 'serving' ||
+        s == 'pharmacy' ||
+        s == 'called';
+  }
+
+  bool _isInactiveQueueStatus(String? status) {
+    final s = status?.toLowerCase();
+    return s == 'completed' ||
+        s == 'cancelled' ||
+        s == 'auto_cancelled' ||
+        s == 'timeout' ||
+        s == 'left_geofence';
+  }
+
+  bool _shouldStartOutsideCountdown() {
+    return _userInQueue && _status?.toLowerCase() == 'waiting';
   }
 
 
@@ -235,13 +277,32 @@ Future<void> _leaveQueue({String reason = "user"}) async {
   }
 }
 
+void _showInAppAlert(String message) {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Queue Alert'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   void _handleGeofenceEnter() {
     _setOutsideFlag(false);
     _cancelOutsideCountdown(showSnack: true);
   }
 
   void _handleGeofenceExit() {
-    if (!_userInQueue || _isOutside) return;
+    if (!_shouldStartOutsideCountdown() || _isOutside) return;
 
     _setOutsideFlag(true);
     setState(() {
@@ -258,7 +319,7 @@ Future<void> _leaveQueue({String reason = "user"}) async {
       }
       if (_outsideSecondsLeft <= 1) {
         timer.cancel();
-        _autoLeaveQueueDueToGeofence();
+        MediQGeofenceService.instance.notifyCountdownEnded();
       } else {
         setState(() => _outsideSecondsLeft--);
         OutsideStatus.instance.updateSeconds(_outsideSecondsLeft);
@@ -272,6 +333,23 @@ Future<void> _leaveQueue({String reason = "user"}) async {
       ),
     );
   }
+
+  void _onQueueAutoCancelled() {
+  if (!mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Queue auto-cancelled due to leaving clinic area.'),
+    ),
+  );
+
+  setState(() {
+    _userInQueue = false;
+    _status = 'auto_cancelled';
+  });
+
+  OutsideStatus.instance.hide(_outsideGraceSeconds);
+}
 
   void _cancelOutsideCountdown({bool showSnack = false}) {
     if (!_isOutside) return;
@@ -320,6 +398,7 @@ Future<void> _leaveQueue({String reason = "user"}) async {
         .snapshots()
         .listen((snap) {
       if (!snap.exists) {
+        MediQGeofenceService.instance.clearActiveQueueId();
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) setState(() => _userInQueue = false);
         });
@@ -329,14 +408,17 @@ Future<void> _leaveQueue({String reason = "user"}) async {
       final data = snap.data() as Map<String, dynamic>;
       debugPrint('⚡ Queue snapshot → ${data['status']} | ${data['queue_number']}');
 
+      final status = data['status']?.toString();
+      final isActive = _isActiveQueueStatus(status);
+
       setState(() {
-        _userInQueue = true;
+        _userInQueue = isActive;
         _queueNumber = data['queue_number'];
-        _status = data['status'];
+        _status = status;
         _queueSeq = data['queue_seq'];
       });
 
-      if (data['status'] == 'completed') {
+      if (status == 'completed') {
         Future.delayed(const Duration(milliseconds: 400), () {
           if (mounted) {
             Navigator.push(
@@ -347,11 +429,57 @@ Future<void> _leaveQueue({String reason = "user"}) async {
         });
       }
 
+      if (!isActive) {
+        MediQGeofenceService.instance.clearActiveQueueId();
+        _outsideTimer?.cancel();
+        _outsideTimer = null;
+        if (_isOutside && mounted) {
+          setState(() {
+            _isOutside = false;
+            _outsideSecondsLeft = _outsideGraceSeconds;
+          });
+        }
+        OutsideStatus.instance.hide(_outsideGraceSeconds);
+      }
+
+      if (_isInactiveQueueStatus(status)) {
+        FirebaseFirestore.instance
+            .collection('queues')
+            .doc(uid)
+            .delete()
+            .catchError((_) {});
+      }
+
       _updatePeopleAhead();
     });
   }
 
   Future<void> _updatePeopleAhead() async {
+    debugPrint('🧪 _updatePeopleAhead CALLED');
+    if (!_userInQueue) {
+      MediQGeofenceService.instance.clearActiveQueueId();
+      MediQGeofenceService.instance.setEstimatedWaitMinutes(0);
+      if (mounted) {
+        setState(() {
+          _peopleAhead = 0;
+          _estWait = '--';
+        });
+      }
+      return;
+    }
+
+    if (_status != null && !_isActiveQueueStatus(_status)) {
+      MediQGeofenceService.instance.clearActiveQueueId();
+      MediQGeofenceService.instance.setEstimatedWaitMinutes(0);
+      if (mounted) {
+        setState(() {
+          _peopleAhead = 0;
+          _estWait = '--';
+        });
+      }
+      return;
+    }
+
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
@@ -371,7 +499,19 @@ Future<void> _leaveQueue({String reason = "user"}) async {
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
+        debugPrint('📦 my-queue response = $data');
         if (data['success'] == true) {
+
+          final queueId = data['queue_id'];
+                    if (queueId is int) {
+            final apiStatus = data['status']?.toString();
+            if (apiStatus == null || _isActiveQueueStatus(apiStatus)) {
+              MediQGeofenceService.instance.setActiveQueueId(queueId);
+              debugPrint('? ACTIVE QUEUE ID = $queueId');
+            } else {
+              MediQGeofenceService.instance.clearActiveQueueId();
+            }
+          }
           final apiAhead = data['people_ahead'];
           final roomName = data['room_name'];
           final doctorName = data['doctor_name'];
@@ -400,6 +540,7 @@ Future<void> _leaveQueue({String reason = "user"}) async {
 
   Future<void> _recalculateEstimatedWait(int diffAhead) async {
     if (diffAhead <= 0) {
+      MediQGeofenceService.instance.setEstimatedWaitMinutes(0);
       if (!mounted) return;
       setState(() => _estWait = 'Ready');
       return;
@@ -415,16 +556,47 @@ Future<void> _leaveQueue({String reason = "user"}) async {
           await ConsultationService.instance.fetchAverageMinutes();
       if (!mounted || requestToken != _ewtRequestToken) return;
       if (avgMinutes <= 0) {
+        MediQGeofenceService.instance.setEstimatedWaitMinutes(0);
         setState(() => _estWait = '--');
         return;
       }
       final waitMinutes = (diffAhead * avgMinutes).round();
+      MediQGeofenceService.instance.setEstimatedWaitMinutes(waitMinutes);
       setState(() => _estWait = '~${waitMinutes > 0 ? waitMinutes : 1} mins');
     } catch (_) {
+      MediQGeofenceService.instance.setEstimatedWaitMinutes(0);
       if (!mounted || requestToken != _ewtRequestToken) return;
       setState(() => _estWait = '--');
     }
   }
+
+  void startOutsideCountdownFromRule(int seconds) {
+  _outsideTimer?.cancel();
+
+  setState(() {
+    _isOutside = true;
+    _outsideSecondsLeft = seconds;
+  });
+
+  OutsideStatus.instance.show(_outsideSecondsLeft);
+
+  _outsideTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    if (!mounted) {
+      timer.cancel();
+      return;
+    }
+
+    if (_outsideSecondsLeft <= 1) {
+      timer.cancel();
+      _autoLeaveQueueDueToGeofence();
+    } else {
+      setState(() => _outsideSecondsLeft--);
+      OutsideStatus.instance.updateSeconds(_outsideSecondsLeft);
+    }
+  });
+}
+
+
 
   @override
   void dispose() {
@@ -875,3 +1047,4 @@ class _MilestoneRow extends StatelessWidget {
     );
   }
 }
+

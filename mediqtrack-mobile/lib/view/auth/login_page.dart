@@ -7,6 +7,7 @@ import '../app_shell.dart';
 import 'signup_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '/services/api_service.dart';
+import 'package:mediqtrack03/view/auth/forgot_password_screen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -132,6 +133,25 @@ class _LoginPageState extends State<LoginPage> {
                             ? 'Min 6 characters'
                             : null,
                       ),
+                      const SizedBox(height: 6),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ),
                     ],
                   ),
                 ),

@@ -30,8 +30,8 @@ class _JoinQueuePageState extends State<JoinQueuePage> {
   Future<void> joinQueue() async {
     setState(() => _joining = true);
 
-    final url = Uri.parse('http://10.82.145.75:8000/api/join-queue'); // emulator
-    // kalau real device → guna IP LAN laptop contoh http://10.82.145.75:8000/api/join-queue
+    final url = Uri.parse('http://10.82.150.157:8000/api/join-queue'); // emulator
+    // kalau real device → guna IP LAN laptop contoh http://10.82.150.157:8000/api/join-queue
 
     final response = await http.post(url, body: {
       'patient_id': widget.patientId.toString(),

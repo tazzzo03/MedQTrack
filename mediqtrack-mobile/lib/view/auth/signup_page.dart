@@ -53,7 +53,7 @@ class _SignUpPageState extends State<SignUpPage> {
   void _doSignUp() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sila isi semua ruangan dengan betul.')));
+          const SnackBar(content: Text('Please fill in all fields correctly.')));
       return;
     }
     if (!_acceptedTos) {
@@ -85,7 +85,6 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F9FA),
       appBar: AppBar(
         title: const Text('Patient Registration'),
         backgroundColor: Color(0xFF1565C0),
@@ -106,7 +105,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   prefixIcon: const Icon(Icons.person_outline),
                 ),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Nama diperlukan' : null,
+                    (v == null || v.trim().isEmpty) ? 'Full name is required' : null,
               ),
               const SizedBox(height: 15),
               TextFormField(
@@ -115,8 +114,14 @@ class _SignUpPageState extends State<SignUpPage> {
                   labelText: 'IC Number',
                   prefixIcon: const Icon(Icons.credit_card_outlined),
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'No. IC diperlukan' : null,
+                validator: (v) {
+                  final value = v?.trim() ?? '';
+                  if (value.isEmpty) return 'IC number is required';
+                  if (!RegExp(r'^\d{12}$').hasMatch(value)) {
+                    return 'Enter a valid IC Number';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
               TextFormField(
@@ -128,7 +133,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   prefixIcon: const Icon(Icons.calendar_today_outlined),
                 ),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Tarikh lahir diperlukan' : null,
+                    (v == null || v.trim().isEmpty) ? 'Date of birth is required' : null,
               ),
               const SizedBox(height: 15),
               DropdownButtonFormField<String>(
@@ -142,7 +147,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   prefixIcon: const Icon(Icons.wc_outlined),
                 ),
                 onChanged: (val) => setState(() => _gender = val),
-                validator: (v) => (v == null || v.isEmpty) ? 'Pilih jantina' : null,
+                validator: (v) => (v == null || v.isEmpty) ? 'Please select gender' : null,
               ),
               const SizedBox(height: 15),
               TextFormField(
@@ -152,8 +157,15 @@ class _SignUpPageState extends State<SignUpPage> {
                   prefixIcon: const Icon(Icons.phone_outlined),
                 ),
                 keyboardType: TextInputType.phone,
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'No. telefon diperlukan' : null,
+                validator: (v) {
+                  final value = v?.trim() ?? '';
+                  if (value.isEmpty) return 'Phone number is required';
+                  if (!RegExp(r'^\d+$').hasMatch(value)) {
+                    return 'Phone must be digits only';
+                  }
+                  if (value.length >= 10) return 'Enter a valid Phone Number';
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
               TextFormField(
@@ -164,8 +176,8 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Email diperlukan';
-                  if (!v.contains('@')) return 'Masukkan email sah';
+                  if (v == null || v.isEmpty) return 'Email is required';
+                  if (!v.contains('@')) return 'Enter a valid email';
                   return null;
                 },
               ),
@@ -183,7 +195,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 validator: (v) =>
-                    (v == null || v.length < 6) ? 'Min 6 aksara' : null,
+                    (v == null || v.length < 6) ? 'Minimum 6 characters' : null,
               ),
               const SizedBox(height: 10),
               Row(

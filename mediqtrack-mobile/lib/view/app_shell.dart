@@ -7,6 +7,7 @@ import 'notifications_page.dart';
 import 'profile_page.dart';
 import 'auth/auth_gate.dart';
 import 'splash_screen.dart';
+import '../services/notification_event.dart';
 
 class MediQTrackApp extends StatelessWidget {
   const MediQTrackApp({super.key});
@@ -57,7 +58,12 @@ class _HomeShellState extends State<HomeShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: (i) {
+          setState(() => _index = i);
+          if (i == 2) {
+            NotificationEventBus.ping();
+          }
+        },
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.confirmation_number_outlined), selectedIcon: Icon(Icons.confirmation_number), label: 'My Queue'),

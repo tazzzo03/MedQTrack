@@ -35,7 +35,7 @@ class ConsultationService {
 
   Future<double> fetchAverageMinutes() async {
   final data = await _client
-      .from('average_consultation_combined')
+      .from('average_consultation_today2')
       .select('average_minutes')
       .limit(1)
       .maybeSingle();

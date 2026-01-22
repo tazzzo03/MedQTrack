@@ -14,7 +14,7 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  static const _apiBase = 'http://10.82.145.75:8000'; // Tukar ke IP PC kau
+  static const _apiBase = 'http://10.82.150.157:8000'; // Tukar ke IP PC kau
   static const _storageBucket = 'gs://mediqtrack-d6aa7.firebasestorage.app';
 
   String? _avatarUrl;
